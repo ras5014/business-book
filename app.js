@@ -80,7 +80,8 @@ const formattedDate = date.toLocaleString("en-GB", {
     year: "numeric"
 });
 
-
+// All Routes
+// =================================================================Home=================================================================  
 app.get('/', function (req, res) {
     res.render("home");
 
@@ -544,11 +545,7 @@ app.get ("/employeeInfo", function(req, res) {
     });
 });
 
-//============================================================PRODUCTION============================================================
-app.get("/production", function(req, res) {
-    res.render('production');
-});
-
+// Server Configuration & Databse Connection Check
 db.connect(function (err) {
     if (err) {
         console.log("Database Not Connected" + err.message);

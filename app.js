@@ -1,14 +1,21 @@
-let express = require('express');
-let bodyParser = require('body-parser');
-let mysql = require('mysql');
-let app = express();
-let _ = require('lodash');
+// All imports
+import express from 'express';
+import bodyParser from 'body-parser';
+import mysql from 'mysql';
+import _ from 'lodash';
+import session from 'express-session'
+import flash from 'connect-flash'
+import dotenv from 'dotenv';
+
+// Express App
+dotenv.config();
+const app = express();
+const PORT = process.env.PORT
+
+// Exxpress Middleware Configuration
+app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(express.static("public"));
-app.set('view engine', 'ejs');
-
-const session = require('express-session');
-const flash = require('connect-flash');
 app.use(session({
     secret: 'secret',
     cookie: { maxAge : 60000 },
@@ -17,29 +24,55 @@ app.use(session({
 }));
 app.use(flash());
 
+// Database Connection
 const db = mysql.createConnection({
-    host: '34.93.233.252',
-    user: 'root',
-    password: 'Ashok1963',
-    database: 'omtex'
+    host: process.env.HOST,
+    user: process.env.USER,
+    password: process.env.PASSWORD,
+    database: process.env.DATABASE
 });
 
+// Variables required for Initial Loading
 let item_array; 
 let vendor_array;
 let message = '';
+let customer_array;
+let salesman_array;
+let unpaidInvoices;
+let paymentsToVendors_Table;
+let paymentsFromCustomers_Table;
+let paymentsToEmployees_Table;
+let stocksTable;
+let amount_in_bank;
+let amount_in_cash;
 
+function setCustomerArray(results) {
+    customer_array = results;
+}
 function setItemArray(results) {
     item_array = results;
 }
-
 function setVendorArray(rows) {
     vendor_array = rows;
 }
-
 function setSalesmanArray(rows) {
     salesman_array = rows;
 }
-
+function setUnpaidInvoices (results) {
+    unpaidInvoices = results;
+}
+function setpaymentsToVendors_Table (results) {
+    paymentsToVendors_Table = results;
+}
+function setpaymentsFromCustomers_Table (results) {
+    paymentsFromCustomers_Table = results;
+}
+function setpaymentsToEmployees_Table (results) {
+    paymentsToEmployees_Table = results;
+}
+function setstocksTable (results) {
+    stocksTable = results;
+}
 const date = new Date();
 const formattedDate = date.toLocaleString("en-GB", {
     day: "numeric",
@@ -47,13 +80,6 @@ const formattedDate = date.toLocaleString("en-GB", {
     year: "numeric"
 });
 
-db.connect(function (err) {
-    if (err) {
-        console.log("Database Not Connected" + err.message);
-    } else {
-        console.log("Database Connected");
-    }
-});
 
 app.get('/', function (req, res) {
     res.render("home");
@@ -190,17 +216,6 @@ app.post('/showPurchaseDetails', function(req, res) {
 
 
 //===========================================================SALES===========================================================
-
-let customer_array;
-let salesman_array;
-
-function setCustomerArray(results) {
-    customer_array = results;
-}
-
-function setSalesmanArray(rows) {
-    salesman_array = rows;
-}
 
 app.get('/salesTable', function(req, res) {
     let sql = "SELECT * FROM sales ORDER BY row_id DESC";
@@ -343,27 +358,6 @@ app.post('/showReturnDetails', function(req, res) {
 
 
 //===========================================================PAYMENTS===========================================================
-let unpaidInvoices;
-let paymentsToVendors_Table;
-let paymentsFromCustomers_Table;
-let paymentsToEmployees_Table;
-
-function setUnpaidInvoices (results) {
-    unpaidInvoices = results;
-}
-
-function setpaymentsToVendors_Table (results) {
-    paymentsToVendors_Table = results;
-}
-
-function setpaymentsFromCustomers_Table (results) {
-    paymentsFromCustomers_Table = results;
-}
-
-function setpaymentsToEmployees_Table (results) {
-    paymentsToEmployees_Table = results;
-}
-
 
 app.get('/payments', function(req, res) {
     res.render('payments', {vendor_array: vendor_array, customer_array: customer_array, salesman_array: salesman_array, invoice_array: unpaidInvoices, formattedDate: formattedDate, table1: paymentsToVendors_Table, table2: paymentsFromCustomers_Table, table3: paymentsToEmployees_Table});
@@ -438,12 +432,6 @@ app.post('/delete_paymentReceived', function(req, res) {
 
 //===========================================================STOCKS===========================================================
 
-let stocksTable;
-
-function setstocksTable (results) {
-    stocksTable = results;
-}
-
 app.get('/stocks', function(req, res) {
     res.render('stocks', {table: stocksTable});
 });
@@ -474,8 +462,6 @@ app.post('/addNew_Item', function(req, res) {
 });
 
 //===========================================================CASH-BOOK===========================================================
-let amount_in_bank;
-let amount_in_cash;
 
 app.get('/cashBook', function(req, res) {
     db.query("SELECT balance FROM amount_in_bank", (err, results) => {
@@ -563,8 +549,14 @@ app.get("/production", function(req, res) {
     res.render('production');
 });
 
-
-app.listen(3000 || process.env.PORT, function(req, res) {
-    console.log("Server has started on http://localhost:3000");
+db.connect(function (err) {
+    if (err) {
+        console.log("Database Not Connected" + err.message);
+    } else {
+        console.log("Database Connected");
+        app.listen(process.env.PORT, function(req, res) {
+            console.log("Server has started on http://localhost:3000");
+        });
+    }
 });
 
